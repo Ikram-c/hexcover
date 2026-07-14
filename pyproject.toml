@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hexcover"
+version = "2.0.0"
+description = "Region / KML cluster H3 hexagon covering pipeline with EO and WEBKNOSSOS integration"
+requires-python = ">=3.10"
+dependencies = [
+    "h3>=4.0",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+zarr = ["zarr>=2.16"]
+wk = ["webknossos>=0.16"]
+dev = ["pytest>=8.0", "pytest-mock>=3.12"]
+
+[project.scripts]
+hexcover = "hexcover.pipeline:main"
+hexcover-eo = "hexcover.eo_cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hexcover"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
