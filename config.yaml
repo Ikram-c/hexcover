@@ -1,0 +1,169 @@
+pipeline:
+  h3_resolution: 3
+  clip_bbox: [49.0, -5.0, 62.0, 13.0]   # null to disable globally
+
+regions:
+  - name: North Sea
+    relation_id: 9051063
+    type: sea
+    clip_to_bbox: false
+  - name: United Kingdom
+    relation_id: 62149
+    type: country
+  - name: Netherlands
+    relation_id: 47796
+    type: country
+  - name: Germany
+    relation_id: 51477
+    type: country
+  - name: Denmark
+    relation_id: 50046
+    type: country
+
+overlap:
+  enabled: true
+  region_types: [country]   # empty list = test every region
+
+limits:
+  max_input_points: 500000
+  max_cluster_points: 100000
+  max_hull_iterations_factor: 4
+  max_bias_cells: 2000000
+
+overpass:
+  urls:
+    - "https://overpass-api.de/api/interpreter"
+  timeout_s: 180
+  timeout_buffer_s: 30
+  rate_limit_s: 15
+  max_retries: 4
+  backoff_base_s: 15.0
+  backoff_multiplier: 2.0
+  retryable_status_codes: [429, 502, 503, 504]
+  user_agent: "hexcover/2.0 (research; contact: ic07@local)"
+  referer: "https://github.com/local/hexcover"
+
+hull:
+  min_vertices: 3
+  collinear_tolerance: 1.0e-10
+
+gjk:
+  max_iterations: 128
+  tolerance: 1.0e-6
+  use_nesterov: true
+  norm_floor: 1.0e-30
+
+bias:
+  enabled: true
+  features: [sri_entropy, gini, occupancy, dispersion]
+  grid_rows: 5
+  grid_cols: 5
+  degenerate_span: 1.0e-6
+  decimal_places: 4
+
+cluster:
+  distance_threshold_deg: 1.5
+  min_cluster_size: 2
+  top_n_clusters: null
+  pair_chunk_size: 512
+
+hierarchy:
+  area_thresholds_sq_deg: [0.1, 1.0, 5.0, 20.0]
+  resolutions: [7, 6, 5, 4, 3]
+
+kml:
+  enabled: true
+  source:
+    type: file
+    path: doc.kml
+    url: ""
+    timeout_s: 30
+    headers: {}
+    store: ""
+    points_array: ""
+    lat_array: latitude
+    lon_array: longitude
+    group_path: ""
+    storage_options: {}
+    scale_index: 0
+    apply_transforms: true
+    retry:
+      max_retries: 0
+      backoff_base_s: 1.0
+      backoff_multiplier: 2.0
+      retryable_status_codes: [429, 502, 503, 504]
+
+eo:
+  enabled: false
+  provider: cdse
+  targets: [regions, kml_clusters]    # which pipeline outputs to query for
+  collections: [sentinel-2, sentinel-1]
+  collection_names:
+    sentinel-2: SENTINEL-2
+    sentinel-1: SENTINEL-1
+    sentinel-3-olci: SENTINEL-3
+  reference_date: ""                  # ISO datetime; empty = now (UTC)
+  temporal_buffer_days: 1
+  spatial_buffer_km: 50.0
+  max_cloud_cover_pct: 30.0
+  result_limit: 50
+  batch_result_limit: 10
+  batch_log_interval: 10
+  top_n_per_target: 5
+  time_diff_decimal_places: 2
+  cdse:
+    base_url: "https://catalogue.dataspace.copernicus.eu/odata/v1"
+    stac_url: "https://catalogue.dataspace.copernicus.eu/stac"
+    auth_url: "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+    client_id: cdse-public
+    request_timeout_s: 30
+    username_env: CDSE_USERNAME       # credentials from env only, never YAML
+    password_env: CDSE_PASSWORD
+  geometry:
+    km_per_degree_lat: 111.0
+    min_cos_clamp: 0.1
+    seconds_per_hour: 3600
+  csv_columns:                        # for the hexcover-eo batch CLI
+    date: "Start date"
+    time: "Start time"
+    latitude: "Start latitude"
+    longitude: "Start longitude"
+    id: "Id"
+    camera_id: "CameraId"
+  retry:
+    max_retries: 2
+    backoff_base_s: 5.0
+    backoff_multiplier: 2.0
+    retryable_status_codes: [429, 502, 503, 504]
+
+webknossos:
+  enabled: true
+  dataset_name: hexcover
+  dataset_dir: output/webknossos
+  layers: [regions, overlaps, kml_clusters, bias_heat, scene_coverage]
+  voxel_deg: 0.02                 # degrees of lat/lon per voxel
+  voxel_size_nm: [1000.0, 1000.0, 1000.0]
+  padding_deg: 0.5
+  max_raster_pixels: 8000000
+  downsample: true
+  heat_scale: 255                 # bias score -> uint8 intensity
+  local:
+    binary_data_dir: ""           # e.g. ./binaryData/sample_organization
+  remote:
+    upload: false
+    url: "http://localhost:9000"
+    token_env: WK_TOKEN           # token read from env, never YAML
+
+precision:
+  area_decimal_places: 6
+  distance_decimal_places: 6
+
+output:
+  regions_geojson: output/region_hexagons.geojson
+  combined_geojson: output/combined_hexagons.geojson
+  overlaps_geojson: output/overlap_hexagons.geojson
+  bias_report: output/geo_bias_report.json
+  kml_hulls_geojson: output/kml_hulls.geojson
+  kml_hexagons_geojson: output/kml_cluster_hexagons.geojson
+  eo_scenes_csv: output/eo_scenes.csv
+  eo_footprints_geojson: output/eo_scene_footprints.geojson

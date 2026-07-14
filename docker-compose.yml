@@ -1,0 +1,45 @@
+services:
+  webknossos:
+    image: scalableminds/webknossos:latest
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fossildb:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      - POSTGRES_URL=jdbc:postgresql://postgres/webknossos
+    volumes:
+      - ./binaryData:/webknossos/binaryData
+    command:
+      - -Dtracingstore.fossildb.address=fossildb
+      - -Dtracingstore.redis.address=redis
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: webknossos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  fossildb:
+    image: scalableminds/fossildb:master
+    command: ["fossildb", "-c", "skeletonUpdates,volumeData,volumeUpdates,editableMappingsInfo,editableMappingUpdates"]
+    volumes:
+      - fossil_data:/fossildb/data
+
+  redis:
+    image: redis:7
+
+volumes:
+  pg_data:
+  fossil_data:
