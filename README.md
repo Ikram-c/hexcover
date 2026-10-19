@@ -1,4 +1,4 @@
-# hexcover
+# HexCover
 
 A data-driven geospatial processing pipeline that converts OpenStreetMap (OSM) regions and point clusters into uniform H3 hexagon covers, evaluates spatial representativeness bias, detects spatial overlaps, checks satellite scene availability, and exports multi-layer WEBKNOSSOS datasets.
 
