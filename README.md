@@ -3,6 +3,20 @@
 A data-driven geospatial processing pipeline that converts OpenStreetMap (OSM) regions and point clusters into uniform H3 hexagon covers, evaluates spatial representativeness bias, detects spatial overlaps, checks satellite scene availability, and exports multi-layer WEBKNOSSOS datasets.
 
 
+# Summary of stages
+
+* Stage 1 (Regions): Fetches relation nodes via Overpass, clips to bounding boxes, constructs monotone chain convex hulls, generates H3 cell covers, and scores spatial bias.
+
+* Stage 2 (KML Clusters): Parses KML/KMZ/Zarr points, runs single-linkage Union-Find clustering, maps cluster areas to H3 resolutions, and hex-covers clusters.
+
+* Stage 3 (Overlaps): Filters candidates using bounding-box components and runs Nesterov-accelerated 2D GJK testing on hull pairs to produce shared cell intersections.
+
+* Stage 4 (Outputs): Atomically writes GeoJSON feature collections and JSON bias reports.
+
+* Stage 5 (EO Scene Availability): Queries Copernicus Data Space (CDSE) catalogues around centroids to filter satellite scenes by cloud cover and temporal/spatial buffers.
+
+* Stage 6 (WEBKNOSSOS Export): Rasterises H3 cells onto lat/lon voxel grids to produce multi-layer segmentation and heatmap datasets.
+
 
 
 ## Summary (PACES)
